@@ -20,6 +20,21 @@ public class Crawler extends Configured implements Tool {
 
 	public static Path datesInputPath = new Path("input-dates.txt");
 
+	public static enum Errors {
+		NONE(0), BAD_NB_ARGS(1), INTERNAL_UNEXPECTED_CASE(2), JOB_COMPLETION(3), INPUT_FILE_WRITE(
+				4), UNASSIGNED_ERROR_CODE(5);
+
+		private int value;
+
+		private Errors(int value) {
+			this.value = value;
+		}
+
+		public int getValue() {
+			return value;
+		}
+	};
+
 	public static class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 
 		public void map(Object a, Text b, Context context) throws IOException,
@@ -64,37 +79,48 @@ public class Crawler extends Configured implements Tool {
 	}
 
 	public int run(String[] args) throws Exception {
+		int returnCode = Errors.UNASSIGNED_ERROR_CODE.getValue();
 
-		Configuration conf = this.getConf();
-		Job job = Job.getInstance(conf, "Wikileaks - PlusD data Crawler");
-		FileSystem fs = FileSystem.get(conf);
-		boolean success = false;
+		if (args.length != 2) {
+			System.out.println("Arguments: <from-year> <to-year>");
+			System.out.println("Example: 1973 2010");
 
-		job.setJarByClass(Crawler.class);
-		job.setMapperClass(CrawlerMapper.class);
-		job.setReducerClass(CrawlerReducer.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
-
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(NullOutputFormat.class);
-		TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
-
-		// TODO: from-to dates as arguments?
-
-		// Create & add to program dateInputFile
-		if (writeInputFile(fs, datesInputPath)) {
-			TextInputFormat.addInputPath(job, datesInputPath);
-
-			// Run the job
-			success = job.waitForCompletion(true);
-
-			// Do the cleaning
-			fs.delete(datesInputPath, true);
+			returnCode = Errors.BAD_NB_ARGS.getValue();
 		} else {
-			// TODO: error msg?
+			Configuration conf = this.getConf();
+			Job job = Job.getInstance(conf, "Wikileaks - PlusD data Crawler");
+			FileSystem fs = FileSystem.get(conf);
+
+			job.setJarByClass(Crawler.class);
+			job.setMapperClass(CrawlerMapper.class);
+			job.setReducerClass(CrawlerReducer.class);
+			job.setOutputKeyClass(Text.class);
+			job.setOutputValueClass(Text.class);
+
+			job.setInputFormatClass(TextInputFormat.class);
+			job.setOutputFormatClass(NullOutputFormat.class);
+			TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
+
+			// TODO: extract from-to dates as arguments
+
+			// Create & add to program dateInputFile
+			if (writeInputFile(fs, datesInputPath)) {
+				TextInputFormat.addInputPath(job, datesInputPath);
+
+				// Run the job
+				if (job.waitForCompletion(true)) {
+					returnCode = Errors.NONE.getValue();
+				} else {
+					returnCode = Errors.JOB_COMPLETION.getValue();
+				}
+
+				// Do the cleaning
+				fs.delete(datesInputPath, true);
+			} else {
+				returnCode = Errors.INPUT_FILE_WRITE.getValue();
+			}
 		}
 
-		return (success ? 0 : 1);
+		return returnCode;
 	}
 }
