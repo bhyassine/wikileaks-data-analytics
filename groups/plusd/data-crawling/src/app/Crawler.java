@@ -127,8 +127,6 @@ public class Crawler extends Configured implements Tool {
 		job.setOutputFormatClass(NullOutputFormat.class);
 		TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
-		// TODO: extract from-to dates as arguments
-
 		// Create & add to program dateInputFile
 		if (writeInputFile(fs, datesInputPath, fromDate, toDate)) {
 			TextInputFormat.addInputPath(job, datesInputPath);
