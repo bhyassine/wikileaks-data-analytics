@@ -1,6 +1,7 @@
 package app;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -16,6 +17,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 public class Crawler extends Configured implements Tool {
+
+	public static Path datesInputPath = new Path("input-dates.txt");
 
 	public static class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 
@@ -40,6 +43,21 @@ public class Crawler extends Configured implements Tool {
 		}
 	}
 
+	public static boolean writeInputFile(FileSystem fs, Path path)
+			throws IOException {
+		OutputStreamWriter osw = new OutputStreamWriter(fs.create(path));
+
+		StringBuilder dates = new StringBuilder();
+
+		// TODO: fill dates with the actual dates
+
+		osw.write(dates.toString());
+		osw.flush();
+		osw.close();
+
+		return true;
+	}
+
 	public static void main(String[] args) throws Exception {
 		int res = ToolRunner.run(new Configuration(), new Crawler(), args);
 		System.exit(res);
@@ -62,11 +80,20 @@ public class Crawler extends Configured implements Tool {
 		job.setOutputFormatClass(NullOutputFormat.class);
 		TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
-		// TODO: input file name as argument?
-		TextInputFormat.addInputPath(job, new Path("input_dates.txt"));
+		// TODO: from-to dates as arguments?
 
-		// Run the job
-		success = job.waitForCompletion(true);
+		// Create & add to program dateInputFile
+		if (writeInputFile(fs, datesInputPath)) {
+			TextInputFormat.addInputPath(job, datesInputPath);
+
+			// Run the job
+			success = job.waitForCompletion(true);
+
+			// Do the cleaning
+			fs.delete(datesInputPath, true);
+		} else {
+			// TODO: error msg?
+		}
 
 		return (success ? 0 : 1);
 	}
