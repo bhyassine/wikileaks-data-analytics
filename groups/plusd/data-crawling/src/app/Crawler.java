@@ -33,6 +33,8 @@ public class Crawler extends Configured implements Tool {
 	public static String defaultFrom = "1966-01-01";
 	public static String defaultTo = "2010-12-31";
 
+	public static String errorToken = "error";
+
 	// If there are more than 500 documents in one
 	// interval, we will not be able to download
 	// them all. That's actually a limitation
@@ -56,21 +58,66 @@ public class Crawler extends Configured implements Tool {
 
 	public static class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 
-		public void map(Object a, Text b, Context context) throws IOException,
-				InterruptedException {
+		public void map(Object lineObj, Text datesStr, Context context)
+				throws IOException, InterruptedException {
 
-			// TODO: outputs the pairs (..., page_id) for each page_id of
-			// documents found in the interval of the date chunk
-			context.write(new Text("a"), new Text("b"));
+			String[] datesArray = datesStr.toString().split(
+					String.valueOf(separator));
+			Date fromDate, toDate;
+			String fromDateStr = datesArray[0];
+			String toDateStr = datesArray[1];
+			try {
+				fromDate = defaultDF.parse(fromDateStr);
+				toDate = defaultDF.parse(toDateStr);
+
+				// Query type: GET
+				// URL: www.wikileaks.org/plusd/sphinxer_do.php
+				// Function: The documents [token+1, token+qlimit] ordered
+				// by qsort between qtfrom and qtto are returned
+
+				// Possible GET parameters:
+				// ------------------------
+				// Protocol: http/https
+				// format: {json (default), html}
+				// command: doc_list_from_query
+				// project: all_cables
+				// qcanonical: empty / facultative (?)
+				// qcanonical_seal: 7fa94db3387685fe93c1c13cdca27a62 [mandatory]
+				// qtfrom: -125366400 [#seconds from 1 January 1970]
+				// qtto: 1293839999 [#seconds from 1 January 1970]
+				// qsort: tasc [means Time ascending, tdesc available]
+				// qlimit: [0, 500]
+				// token: 20
+
+				// Json answer
+				// ------------------------
+				// {total_num_docs, doc_list, token, error, exec_time}
+				//
+				// total_num_docs: The query-projection size
+				// doc_list: an array of objects { .., refid, .. }
+
+				// TODO: outputs the pairs (page_id, ...) for each page_id of
+				// documents found in the interval of the date chunk
+				context.write(new Text("a"), new Text("b"));
+
+			} catch (ParseException e) {
+				context.write(
+						new Text(errorToken),
+						new Text(String.format("Unable to parse %s or %s",
+								fromDateStr, toDateStr)));
+			}
 		}
 	}
 
 	public static class CrawlerReducer extends Reducer<Text, Text, Text, Text> {
 
-		public void reduce(Text a, Iterable<Text> bList, Context context)
+		public void reduce(Text refid, Iterable<Text> dontCare, Context context)
 				throws IOException, InterruptedException {
 
 			Configuration conf = context.getConfiguration();
+
+			// TODO: delete
+			System.out.println(refid.toString());
 
 			// TODO: save the html file corresponding to its pair.page_id
 			context.write(new Text("c"), new Text("d"));
