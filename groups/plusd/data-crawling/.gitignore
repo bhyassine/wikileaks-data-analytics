@@ -6,3 +6,8 @@
 # Common
 /bin/
 *.crc
+*~
+
+# Project specific
+input-dates.txt
+
