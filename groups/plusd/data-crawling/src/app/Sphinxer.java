@@ -1,6 +1,7 @@
 package app;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.util.Stack;
 import java.util.regex.Matcher;
@@ -8,6 +9,8 @@ import java.util.regex.Pattern;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
+import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
 
 /**
  * Sphinxer is the web interface for wikileaks cables.
@@ -32,12 +35,17 @@ public class Sphinxer {
 
 	public static String urlStr = "www.wikileaks.org/plusd/sphinxer_do.php";
 
-	public static enum availableProtocols {
+	// The documentsNo are consecutive integers.
+	// They have been tried at hand to deduct a (min,max)
+	public static int minDocumentNo = 1;
+	public static int maxDocumentNo = 2325959;
+
+	public static enum AvailableProtocols {
 		HTTP("http"), HTTPS("https");
 
 		private String value;
 
-		private availableProtocols(String value) {
+		private AvailableProtocols(String value) {
 			this.value = value;
 		}
 
@@ -124,6 +132,8 @@ public class Sphinxer {
 
 	public static class QLimit {
 		public static String key = "qlimit";
+		public static int minLimit = 20;
+		public static int maxLimit = 500;
 	}
 
 	public static class Token {
@@ -173,6 +183,22 @@ public class Sphinxer {
 	}
 
 	/**
+	 * Is the documentNo a valid one?
+	 * 
+	 * @param no The document number
+	 * @return (-1, 0, 1) if it is respectively (below, in, above) the valid interval
+	 */
+	public static int isValidDocumentNo(int no) {
+		if (no < minDocumentNo) {
+			return -1;
+		} else if (maxDocumentNo < no) {
+			return 1;
+		}
+
+		return 0;
+	}
+
+	/**
 	 * Ask Sphinxer for documents ref_id listing.
 	 * Can take these parameters:
 	 *	token, qlimit, qsort, (qtto), (qtfrom),
@@ -185,49 +211,80 @@ public class Sphinxer {
 	 */
 	public static Stack<String> askForRefIDListing(int fromDocumentNo,
 			int nbOfDocuments) throws IllegalArgumentException,
-			MalformedURLException, IOException, JSONException {
+			InternalRuntimeError {
 		Stack<String> refIdStack = new Stack<String>();
 
 		int qlimit = nbOfDocuments;
-		qlimit = Math.min(qlimit, 500);
-		qlimit = Math.max(qlimit, 20);
+		qlimit = Math.min(qlimit, QLimit.maxLimit);
+		qlimit = Math.max(qlimit, QLimit.minLimit);
 		if (qlimit != nbOfDocuments) {
-			throw new IllegalArgumentException(
-					"nbOfDocuments should be between 20 and 500");
+			throw new IllegalArgumentException(String.format(
+					"nbOfDocuments should be between %d and %d",
+					QLimit.minLimit, QLimit.maxLimit));
 		}
-		if (fromDocumentNo < 1) {
-			throw new IllegalArgumentException(
-					"The documents begin from No 1 (and not below)");
+		int validityCode = isValidDocumentNo(fromDocumentNo);
+		if (validityCode == -1) {
+			throw new IllegalArgumentException(String.format(
+					"The documents begin from No %d (and not below)",
+					minDocumentNo));
 		}
-		if (fromDocumentNo > 2325959) {
+		if (validityCode == 1) {
 			throw new IllegalArgumentException(
-					"The documents end at No 2325959 (and not above)");
+					String.format("The documents end at No %d (and not above)",
+							maxDocumentNo));
 		}
 
 		StringBuilder URLStr = new StringBuilder();
-		URLStr.append(Sphinxer.availableProtocols.HTTP.getValue());
+		URLStr.append(AvailableProtocols.HTTP.getValue());
 		URLStr.append("://");
-		URLStr.append(Sphinxer.urlStr);
+		URLStr.append(urlStr);
 		URLStr.append('?');
 
 		QueryString parameters = new QueryString();
-		parameters.add(Token.key, String.valueOf(fromDocumentNo));
-		parameters.add(QLimit.key, String.valueOf(qlimit));
-		parameters.add(Sphinxer.Sorts.key, Sphinxer.Sorts.TIME_ASC.getValue());
-		parameters.add(Sphinxer.CanonicalSeals.key,
-				Sphinxer.CanonicalSeals.PUBLIC_READ.getValue());
-		parameters.add(Sphinxer.Projects.key,
-				Sphinxer.Projects.ALL_CABLES.getValue());
-		parameters.add(Sphinxer.Cmds.key,
-				Sphinxer.Cmds.DOC_LIST_FROM_QUERY.getValue());
-		parameters.add(Sphinxer.Format.key, Sphinxer.Format.HTML.getValue());
+		try {
+			parameters.add(Token.key, String.valueOf(fromDocumentNo));
+			parameters.add(QLimit.key, String.valueOf(qlimit));
+			parameters.add(Sorts.key, Sphinxer.Sorts.TIME_ASC.getValue());
+			parameters.add(CanonicalSeals.key,
+					CanonicalSeals.PUBLIC_READ.getValue());
+			parameters.add(Projects.key, Projects.ALL_CABLES.getValue());
+			parameters.add(Cmds.key, Cmds.DOC_LIST_FROM_QUERY.getValue());
+			parameters.add(Format.key, Format.HTML.getValue());
+		} catch (UnsupportedEncodingException e) {
+			throw new InternalRuntimeError(String.format(
+					"Impossible to build the URL string: %s", e.getMessage()));
+		}
 
 		URLStr.append(parameters.toString());
 
 		// Download the page
-		JSONObject jsonAnswer = new JSONObject(
-				PageLoader.get(URLStr.toString()));
-		String HTMLStr = jsonAnswer.getString("content");
+		JSONObject jsonAnswer;
+		try {
+			jsonAnswer = new JSONObject(PageLoader.get(URLStr.toString()));
+		} catch (MalformedURLException e) {
+			throw new InternalRuntimeError(
+					String.format("Malformed URL %s, got message: %s", URLStr,
+							e.getMessage()));
+		} catch (JSONException e) {
+			throw new InternalRuntimeError(
+					String.format(
+							"Impossible to parse into JSON content \n\n %s \n\n got message %s",
+							e.getMessage()));
+		} catch (IOException e) {
+			throw new InternalRuntimeError(String.format(
+					"Impossible to fetch page %s, got error: %s", URLStr,
+					e.getMessage()));
+		}
+		String HTMLStr;
+		String field = "content";
+		try {
+			HTMLStr = jsonAnswer.getString(field);
+		} catch (JSONException e) {
+			throw new InternalRuntimeError(
+					String.format(
+							"Impossible to extract a %s field from string %s, got message %s",
+							field, jsonAnswer.toString(), e.getMessage()));
+		}
 
 		// Extract ref_ids
 		// e.g.: <tr id="72TEHRAN1164_a">

@@ -2,10 +2,6 @@ package app;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Stack;
 
 import org.apache.hadoop.conf.Configuration;
@@ -21,31 +17,24 @@ import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-//TODO (big): discard dates mechanism and replace it with documentsNo mechanism..
+import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
+
 public class Crawler extends Configured implements Tool {
 
-	public static Path datesInputPath = new Path("input-dates.txt");
+	public static Path tasksInputPath = new Path("tasks-input-file.txt");
 	public static char newline = '\n';
 	public static char separator = '\t';
 
-	// Minimum/Maximum plusD available date
-	// https://www.wikileaks.org/plusd/
-	public static SimpleDateFormat defaultDF = new SimpleDateFormat(
-			"yyyy-MM-dd");
-	public static String defaultFrom = "1966-01-01";
-	public static String defaultTo = "2010-12-31";
-
+	// Errors are valid (key) reducer outputs (yes, they can happen, and we must
+	// be informed)
 	public static String errorToken = "error";
 
-	// If there are more than 500 documents in one
-	// interval, we will not be able to download
-	// them all. That's actually a limitation
-	// TODO: Implement a fallback method (planB) in this case?
-	public static int datesIntervalDay = 42;
+	// How many ref_ids do we discover at each step?
+	public static int nbRefIDsPerFetch = Sphinxer.QLimit.maxLimit;
 
 	public static enum Errors {
 		NONE(0), BAD_NB_ARGS(1), INTERNAL_UNEXPECTED_CASE(2), JOB_COMPLETION(3), INPUT_FILE_WRITE(
-				4), UNASSIGNED_ERROR_CODE(5);
+				4), UNASSIGNED_ERROR_CODE(5), BAD_ARGS(6);
 
 		private int value;
 
@@ -60,31 +49,26 @@ public class Crawler extends Configured implements Tool {
 
 	public static class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 
-		public void map(Object lineObj, Text datesStr, Context context)
+		public void map(Object lineObj, Text fromToString, Context context)
 				throws IOException, InterruptedException {
 
-			String[] datesArray = datesStr.toString().split(
+			String[] fromToSplit = fromToString.toString().split(
 					String.valueOf(separator));
-			Date fromDate, toDate;
-			String fromDateStr = datesArray[0];
-			String toDateStr = datesArray[1];
+			int from = Integer.valueOf(fromToSplit[0]);
+			int to = Integer.valueOf(fromToSplit[1]);
+
+			System.out.println(String.format("%d to %d", from, to));
+
+			Stack<String> refIDs;
 			try {
-				fromDate = defaultDF.parse(fromDateStr);
-				toDate = defaultDF.parse(toDateStr);
-
-				Stack<String> refIDs = Sphinxer.askForRefIDListing(1, 25);
-
-				System.out.println(refIDs.size());
-
-				// TODO: outputs the pairs (page_id, ...) for each page_id of
-				// documents found in the interval of the date chunk
-				context.write(new Text("a"), new Text("b"));
-
-			} catch (Exception e) {
-				context.write(
-						new Text(errorToken),
-						new Text(String.format("Unable to parse %s or %s",
-								fromDateStr, toDateStr)));
+				refIDs = Sphinxer.askForRefIDListing(from, to);
+				for (String refID : refIDs) {
+					context.write(new Text(refID), new Text("dontCare"));
+				}
+			} catch (IllegalArgumentException e) {
+				context.write(new Text(errorToken), new Text(e.getMessage()));
+			} catch (InternalRuntimeError e) {
+				context.write(new Text(errorToken), new Text(e.getMessage()));
 			}
 		}
 	}
@@ -96,49 +80,22 @@ public class Crawler extends Configured implements Tool {
 
 			Configuration conf = context.getConfiguration();
 
-			// TODO: delete
-			System.out.println(refid.toString());
-
-			// TODO: save the html file corresponding to its pair.page_id
+			// TODO: do something with the html file corresponding to its
+			// pair.page_id
 			context.write(new Text("c"), new Text("d"));
 		}
 	}
 
-	public static boolean writeInputFile(FileSystem fs, Path path,
-			Date fromDate, Date toDate, int intervalDay) throws IOException {
+	public static boolean writeInputFile(FileSystem fs, Path path, int fromNo,
+			int toNo, int stepsSize) throws IOException {
 
-		// TODO: Improvement: Use Sphinxer.askForStats() for splitting
-		// dates in a smart way
 		OutputStreamWriter osw = new OutputStreamWriter(fs.create(path));
 
-		StringBuilder dates = new StringBuilder();
-		Calendar cal = Calendar.getInstance();
-		boolean firstLine = true;
+		StringBuilder workChunks = new StringBuilder();
 
-		cal.setTime(fromDate);
-		Date tmpFrom = cal.getTime();
+		// TODO: write work-chunks between fromNo and toNo
 
-		cal.add(Calendar.DATE, intervalDay);
-		Date tmpTo = cal.getTime();
-
-		while (tmpTo.getTime() < toDate.getTime()) {
-			if (!firstLine) {
-				dates.append(newline);
-			} else {
-				firstLine = false;
-			}
-			String tmpFromStr = defaultDF.format(tmpFrom);
-			String tmpToStr = defaultDF.format(tmpTo);
-			dates.append(tmpFromStr + separator + tmpToStr);
-
-			cal.add(Calendar.DATE, 1);
-			tmpFrom = cal.getTime();
-
-			cal.add(Calendar.DATE, intervalDay - 1);
-			tmpTo = cal.getTime();
-		}
-
-		osw.write(dates.toString());
+		osw.write(workChunks.toString());
 		osw.flush();
 		osw.close();
 
@@ -154,58 +111,74 @@ public class Crawler extends Configured implements Tool {
 		int returnCode = Errors.UNASSIGNED_ERROR_CODE.getValue();
 
 		// Getting the input (from, to) dates
-		Date fromDate = defaultDF.parse(defaultFrom);
-		Date toDate = defaultDF.parse(defaultTo);
+		int fromNo = Sphinxer.minDocumentNo;
+		int toNo = Sphinxer.maxDocumentNo;
 		if (args.length != 2) {
 			System.out
-					.println("N.B. Possible arguments are: <from-year> <to-year>");
-			System.out.println(String.format("-> Using defaults: %s to %s",
-					defaultFrom, defaultTo));
+					.println("N.B. Possible arguments are: <from-documentNo> <to-documentNo>");
+			System.out.println(String.format("-> Using defaults: %d to %d",
+					fromNo, toNo));
 		} else {
-			String fromInputStr = args[0];
-			String toInputStr = args[1];
 			try {
-				fromDate = defaultDF.parse(fromInputStr);
-				toDate = defaultDF.parse(toInputStr);
-			} catch (ParseException pe) {
-				System.out.println(String.format(
-						"Failed to parse input dates %s and %s", fromInputStr,
-						toInputStr));
-				System.out.println(String.format("-> Using defaults: %s to %s",
-						defaultFrom, defaultTo));
+				fromNo = Integer.valueOf(args[0]);
+				toNo = Integer.valueOf(args[1]);
+			} catch (NumberFormatException e) {
+				System.out
+						.println(String
+								.format("One or both of <from-documentNo>(%s) or <to-documentNo>(%s) cannot be parsed as an integer",
+										args[0], args[1]));
+				returnCode = Errors.BAD_ARGS.getValue();
+			}
+
+			if (Sphinxer.isValidDocumentNo(fromNo) != 0) {
+				System.out
+						.println(String
+								.format("Argument <from-documentNo> `%d` is not in range (%d, %d)",
+										fromNo, Sphinxer.minDocumentNo,
+										Sphinxer.maxDocumentNo));
+				returnCode = Errors.BAD_ARGS.getValue();
+			} else if (Sphinxer.isValidDocumentNo(toNo) != 0) {
+				System.out
+						.println(String
+								.format("Argument <to-documentNo> `%d` is not in range (%d, %d)",
+										toNo, Sphinxer.minDocumentNo,
+										Sphinxer.maxDocumentNo));
+				returnCode = Errors.BAD_ARGS.getValue();
 			}
 		}
 
-		Configuration conf = this.getConf();
-		Job job = Job.getInstance(conf, "Wikileaks - PlusD data Crawler");
-		FileSystem fs = FileSystem.get(conf);
+		if (returnCode == Errors.UNASSIGNED_ERROR_CODE.getValue()) {
+			Configuration conf = this.getConf();
+			Job job = Job.getInstance(conf, "Wikileaks - PlusD data Crawler");
+			FileSystem fs = FileSystem.get(conf);
 
-		job.setJarByClass(Crawler.class);
-		job.setMapperClass(CrawlerMapper.class);
-		job.setReducerClass(CrawlerReducer.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
+			job.setJarByClass(Crawler.class);
+			job.setMapperClass(CrawlerMapper.class);
+			job.setReducerClass(CrawlerReducer.class);
+			job.setOutputKeyClass(Text.class);
+			job.setOutputValueClass(Text.class);
 
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(NullOutputFormat.class);
-		TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
+			job.setInputFormatClass(TextInputFormat.class);
+			job.setOutputFormatClass(NullOutputFormat.class);
+			TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
-		// Create & add to program dateInputFile
-		if (writeInputFile(fs, datesInputPath, fromDate, toDate,
-				datesIntervalDay)) {
-			TextInputFormat.addInputPath(job, datesInputPath);
+			// Create the workload for reducers
+			if (writeInputFile(fs, tasksInputPath, fromNo, toNo,
+					nbRefIDsPerFetch)) {
+				TextInputFormat.addInputPath(job, tasksInputPath);
 
-			// Run the job
-			if (job.waitForCompletion(true)) {
-				returnCode = Errors.NONE.getValue();
+				// Run the job
+				if (job.waitForCompletion(true)) {
+					returnCode = Errors.NONE.getValue();
+				} else {
+					returnCode = Errors.JOB_COMPLETION.getValue();
+				}
+
+				// Do the cleaning
+				fs.delete(tasksInputPath, true);
 			} else {
-				returnCode = Errors.JOB_COMPLETION.getValue();
+				returnCode = Errors.INPUT_FILE_WRITE.getValue();
 			}
-
-			// Do the cleaning
-			fs.delete(datesInputPath, true);
-		} else {
-			returnCode = Errors.INPUT_FILE_WRITE.getValue();
 		}
 
 		return returnCode;
