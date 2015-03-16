@@ -177,6 +177,17 @@ public class Crawler extends Configured implements Tool {
 
 	public static boolean writeInputFile(FileSystem fs, Path path,
 			Date fromDate, Date toDate, int intervalDay) throws IOException {
+
+		// TODO: Use (*1) to get #documents by month, then split the dates
+		// in a smart way
+		// (*1) https://www.wikileaks.org/plusd/sphinxer_do.php?
+		// -> command=stats_from_query&
+		// -> project=all_cables&
+		// -> qcanonical=&
+		// -> qcanonical_seal=7fa94db3387685fe93c1c13cdca27a62&
+		// -> tkey_from=19660000&
+		// -> tkey_to=20091200&
+		// -> unit=month
 		OutputStreamWriter osw = new OutputStreamWriter(fs.create(path));
 
 		StringBuilder dates = new StringBuilder();
