@@ -1,5 +1,8 @@
 package app;
 
+import java.util.AbstractMap;
+import java.util.Map;
+
 import org.codehaus.jettison.json.JSONObject;
 
 /**
@@ -19,8 +22,9 @@ public class Sphinxer {
 			this.value = cmdName;
 		}
 
-		public String getValue() {
-			return value;
+		public Map.Entry<String, String> getValue() {
+			return new AbstractMap.SimpleEntry<String, String>("command",
+					this.value);
 		}
 	}
 
@@ -33,8 +37,9 @@ public class Sphinxer {
 			this.value = cmdName;
 		}
 
-		public String getValue() {
-			return value;
+		public Map.Entry<String, String> getValue() {
+			return new AbstractMap.SimpleEntry<String, String>("project",
+					this.value);
 		}
 	}
 
@@ -47,8 +52,9 @@ public class Sphinxer {
 			this.value = cmdName;
 		}
 
-		public String getValue() {
-			return value;
+		public Map.Entry<String, String> getValue() {
+			return new AbstractMap.SimpleEntry<String, String>(
+					"qcanonical_seal", this.value);
 		}
 	}
 
@@ -61,8 +67,9 @@ public class Sphinxer {
 			this.value = cmdName;
 		}
 
-		public String getValue() {
-			return value;
+		public Map.Entry<String, String> getValue() {
+			return new AbstractMap.SimpleEntry<String, String>("unit",
+					this.value);
 		}
 	}
 
@@ -81,8 +88,9 @@ public class Sphinxer {
 			this.value = cmdName;
 		}
 
-		public String getValue() {
-			return value;
+		public Map.Entry<String, String> getValue() {
+			return new AbstractMap.SimpleEntry<String, String>("format",
+					this.value);
 		}
 	}
 
