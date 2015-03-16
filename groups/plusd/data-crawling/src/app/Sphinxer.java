@@ -38,7 +38,7 @@ public class Sphinxer {
 	// The documentsNo are consecutive integers.
 	// They have been tried at hand to deduct a (min,max)
 	public static int minDocumentNo = 1;
-	public static int maxDocumentNo = 2325959;
+	public static int maxDocumentNo = 2325960;
 
 	public static enum AvailableProtocols {
 		HTTP("http"), HTTPS("https");
