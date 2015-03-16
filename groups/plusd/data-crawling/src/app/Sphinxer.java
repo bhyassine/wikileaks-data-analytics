@@ -134,7 +134,9 @@ public class Sphinxer {
 	public static JSONObject askForStats() {
 		JSONObject jsonRes = new JSONObject();
 
-		// TODO: implement
+		// TODO: implement if needed
+		// Example URL:
+		// https://www.wikileaks.org/plusd/sphinxer_do.php?command=stats_from_query&project=all_cables&qcanonical=&qcanonical_seal=7fa94db3387685fe93c1c13cdca27a62&tkey_from=19660000&tkey_to=20091200&unit=month
 
 		return jsonRes;
 	}
