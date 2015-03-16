@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -22,6 +22,7 @@ import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
 public class Crawler extends Configured implements Tool {
 
 	public static Path tasksInputPath = new Path("tasks-input-file.txt");
+	public static Path outputPath = new Path("mapred-output");
 	public static char newline = '\n';
 	public static char separator = '\t';
 
@@ -57,11 +58,9 @@ public class Crawler extends Configured implements Tool {
 			int from = Integer.valueOf(fromToSplit[0]);
 			int to = Integer.valueOf(fromToSplit[1]);
 
-			System.out.println(String.format("%d to %d", from, to));
-
 			Stack<String> refIDs;
 			try {
-				refIDs = Sphinxer.askForRefIDListing(from, to);
+				refIDs = Sphinxer.askForRefIDListing(from, (to - from + 1));
 				for (String refID : refIDs) {
 					context.write(new Text(refID), new Text("dontCare"));
 				}
@@ -82,7 +81,8 @@ public class Crawler extends Configured implements Tool {
 
 			// TODO: do something with the html file corresponding to its
 			// pair.page_id
-			context.write(new Text("c"), new Text("d"));
+			// TODO: handle case with refid = errorToken
+			context.write(refid, new Text("downloaded"));
 		}
 	}
 
@@ -90,10 +90,13 @@ public class Crawler extends Configured implements Tool {
 			int toNo, int stepsSize) throws IOException {
 
 		OutputStreamWriter osw = new OutputStreamWriter(fs.create(path));
-
 		StringBuilder workChunks = new StringBuilder();
 
-		// TODO: write work-chunks between fromNo and toNo
+		for (int tmpFrom = fromNo; tmpFrom <= toNo; tmpFrom += stepsSize) {
+			int tmpTo = Math.min(tmpFrom + stepsSize - 1, toNo);
+			workChunks.append(String.format("%s%c%s%c", tmpFrom, separator,
+					tmpTo, newline));
+		}
 
 		osw.write(workChunks.toString());
 		osw.flush();
@@ -159,7 +162,7 @@ public class Crawler extends Configured implements Tool {
 			job.setOutputValueClass(Text.class);
 
 			job.setInputFormatClass(TextInputFormat.class);
-			job.setOutputFormatClass(NullOutputFormat.class);
+			FileOutputFormat.setOutputPath(job, outputPath);
 			TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
 			// Create the workload for reducers
@@ -175,7 +178,7 @@ public class Crawler extends Configured implements Tool {
 				}
 
 				// Do the cleaning
-				fs.delete(tasksInputPath, true);
+				// fs.delete(tasksInputPath, true);
 			} else {
 				returnCode = Errors.INPUT_FILE_WRITE.getValue();
 			}
