@@ -175,6 +175,110 @@ public class Crawler extends Configured implements Tool {
 		}
 	}
 
+	public static enum sphinxerCmds {
+		STATS_FROM_QUERY("stats_from_query"), DOC_LIST_FROM_QUERY(
+				"doc_list_from_query");
+
+		private String value;
+
+		private sphinxerCmds(String cmdName) {
+			this.value = cmdName;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	public static enum sphinxerProjects {
+		ALL_CABLES("all_cables");
+
+		private String value;
+
+		private sphinxerProjects(String cmdName) {
+			this.value = cmdName;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	public static enum sphinxerCanonicalSeals {
+		PUBLIC_READ("7fa94db3387685fe93c1c13cdca27a62");
+
+		private String value;
+
+		private sphinxerCanonicalSeals(String cmdName) {
+			this.value = cmdName;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	public static enum sphinxerUnits {
+		DAY("day"), MONTH("month");
+
+		private String value;
+
+		private sphinxerUnits(String cmdName) {
+			this.value = cmdName;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	/**
+	 * Warning, the possible query formats depends
+	 * on the sphinxer cmds.
+	 * 
+	 * e.g. sphinxerCmds.STATS_FROM_QUERY only accepts sphinxerFormat.JSON
+	 */
+	public static enum sphinxerFormat {
+		JSON("json"), HTML("html");
+
+		private String value;
+
+		private sphinxerFormat(String cmdName) {
+			this.value = cmdName;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
+
+	/**
+	 * Ask Sphinxer (the web interface for wikileaks cables)
+	 * 
+	 * Parameters of the query:
+	 * 	format			[optional]	The response format
+	 * 	command			[mandatory]	The type of query
+	 * 	project			[mandatory]	The associated dataset
+	 * 	qcanonical		[optional]	(?)
+	 * 	qcanonical_seal	[mandatory]	(?) For each query rights-level, a security seal is associated
+	 * 	qtfrom			[???]		From date (timestamp)
+	 * 	qtto			[???]		To date (timestamp)
+	 * 	tkey_from		[optional]	From date (timestamp)
+	 * 	tkey_to			[optional]	To date (timestamp)
+	 * 	qsort			[???]		results sorting type
+	 * 	qlimit			[???]		(?) cardinality of results
+	 * 	token			[???]		(?) The FROM of a LIMIT statement
+	 * 
+	 * @return the JSON query result
+	 */
+	public static JSONObject askSphinxer() {
+		JSONObject jsonRes = new JSONObject();
+
+		// TODO: implement
+
+		return jsonRes;
+	}
+
 	public static boolean writeInputFile(FileSystem fs, Path path,
 			Date fromDate, Date toDate, int intervalDay) throws IOException {
 
