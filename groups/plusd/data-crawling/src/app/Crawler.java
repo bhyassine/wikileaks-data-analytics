@@ -1,19 +1,12 @@
 package app;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import javax.ws.rs.core.UriBuilder;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -26,8 +19,8 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.codehaus.jettison.json.JSONObject;
 
+//TODO (big): discard dates mechanism and replace it with documentsNo mechanism..
 public class Crawler extends Configured implements Tool {
 
 	public static Path datesInputPath = new Path("input-dates.txt");
@@ -78,74 +71,37 @@ public class Crawler extends Configured implements Tool {
 				fromDate = defaultDF.parse(fromDateStr);
 				toDate = defaultDF.parse(toDateStr);
 
-				// Query type: GET
-				// Protocol: http/https
-				// URL: www.wikileaks.org/plusd/sphinxer_do.php
-				// Function: The documents [token+1, token+qlimit] ordered
-				// by qsort between qtfrom and qtto are returned
+				Sphinxer.askForRefIDListing(1, 25);
+
+				// TODO: create a PageFetcher Class (for code below)
+				// try {
+				// HttpURLConnection connection = (HttpURLConnection) qURL
+				// .openConnection();
+				// BufferedReader qBF = new BufferedReader(
+				// new InputStreamReader(connection.getInputStream()));
 				//
-				// Seems to be a minimum of 20 documents
-
-				// Possible GET parameters:
-				// ------------------------
-				// format: {json (default), html}
-				// command: doc_list_from_query
-				// project: all_cables
-				// qcanonical: empty / facultative (?)
-				// qcanonical_seal: 7fa94db3387685fe93c1c13cdca27a62 (???)
-				// [mandatory]
-				// qtfrom: -125366400 [#seconds from 1 January 1970]
-				// qtto: 1293839999 [#seconds from 1 January 1970]
-				// qsort: tasc [means Time ascending, tdesc available]
-				// qlimit: [0, 500]
-				// token: 20
-
-				// Json answer
-				// ------------------------
-				// {total_num_docs, doc_list, token, error, exec_time}
+				// JSONObject jsonResponse = new JSONObject(
+				// IOUtils.toString(qBF));
 				//
-				// total_num_docs: ???
-				// doc_list: an array of objects { .., refid, .. }
-				UriBuilder qUB = UriBuilder
-						.fromPath("http://www.wikileaks.org")
-						.path("plusd/sphinxer_do.php")
-						.queryParam("format", "json")
-						.queryParam("command", "doc_list_from_query")
-						.queryParam("project", "all_cables")
-						.queryParam("qcanonical_seal",
-								"7fa94db3387685fe93c1c13cdca27a62")
-						.queryParam("qtfrom", fromDate.getTime() / 1000)
-						.queryParam("qtto", toDate.getTime() / 1000)
-						.queryParam("qsort", "tasc");
-				URL qURL = qUB.build().toURL();
-				try {
-					HttpURLConnection connection = (HttpURLConnection) qURL
-							.openConnection();
-					BufferedReader qBF = new BufferedReader(
-							new InputStreamReader(connection.getInputStream()));
-
-					JSONObject jsonResponse = new JSONObject(
-							IOUtils.toString(qBF));
-
-					String totalNumDocs = jsonResponse
-							.getString("total_num_docs");
-
-					// TODO: totalNumDocs are always 0..? check where the bug is
-					// with the above query.
-					// Suggestion: Check in depth how the queries work on
-					// https://www.wikileaks.org/plusd/
-					System.out.println(fromDateStr + " " + toDateStr + " ("
-							+ String.valueOf(totalNumDocs) + ") "
-							+ qURL.toString());
-
-					qBF.close();
-				} catch (IOException e) {
-					// TODO: handle this case
-					e.printStackTrace();
-				} catch (Exception e) {
-					// TODO: handle this case
-					e.printStackTrace();
-				}
+				// String totalNumDocs = jsonResponse
+				// .getString("total_num_docs");
+				//
+				// // TODO: totalNumDocs are always 0..? check where the bug is
+				// // with the above query.
+				// // Suggestion: Check in depth how the queries work on
+				// // https://www.wikileaks.org/plusd/
+				// System.out.println(fromDateStr + " " + toDateStr + " ("
+				// + String.valueOf(totalNumDocs) + ") "
+				// + qURL.toString());
+				//
+				// qBF.close();
+				// } catch (IOException e) {
+				// // TODO: handle this case
+				// e.printStackTrace();
+				// } catch (Exception e) {
+				// // TODO: handle this case
+				// e.printStackTrace();
+				// }
 
 				// TODO: outputs the pairs (page_id, ...) for each page_id of
 				// documents found in the interval of the date chunk
