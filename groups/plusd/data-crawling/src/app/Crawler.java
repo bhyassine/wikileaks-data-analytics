@@ -2,7 +2,6 @@ package app;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.Stack;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -10,14 +9,12 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
+import utils.Sphinxer;
 
 public class Crawler extends Configured implements Tool {
 
@@ -47,44 +44,6 @@ public class Crawler extends Configured implements Tool {
 			return value;
 		}
 	};
-
-	public static class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
-
-		public void map(Object lineObj, Text fromToString, Context context)
-				throws IOException, InterruptedException {
-
-			String[] fromToSplit = fromToString.toString().split(
-					String.valueOf(separator));
-			int from = Integer.valueOf(fromToSplit[0]);
-			int to = Integer.valueOf(fromToSplit[1]);
-
-			Stack<String> refIDs;
-			try {
-				refIDs = Sphinxer.askForRefIDListing(from, (to - from + 1));
-				for (String refID : refIDs) {
-					context.write(new Text(refID), new Text("dontCare"));
-				}
-			} catch (IllegalArgumentException e) {
-				context.write(new Text(errorToken), new Text(e.getMessage()));
-			} catch (InternalRuntimeError e) {
-				context.write(new Text(errorToken), new Text(e.getMessage()));
-			}
-		}
-	}
-
-	public static class CrawlerReducer extends Reducer<Text, Text, Text, Text> {
-
-		public void reduce(Text refid, Iterable<Text> dontCare, Context context)
-				throws IOException, InterruptedException {
-
-			Configuration conf = context.getConfiguration();
-
-			// TODO: do something with the html file corresponding to its
-			// pair.page_id
-			// TODO: handle case with refid = errorToken
-			context.write(refid, new Text("downloaded"));
-		}
-	}
 
 	public static boolean writeInputFile(FileSystem fs, Path path, int fromNo,
 			int toNo, int stepsSize) throws IOException {
