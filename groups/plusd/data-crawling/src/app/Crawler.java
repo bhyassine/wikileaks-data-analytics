@@ -20,6 +20,9 @@ public class Crawler extends Configured implements Tool {
 
 	public static Path tasksInputPath = new Path("tasks-input-file.txt");
 	public static Path outputPath = new Path("mapred-output");
+	public static String pagesSavingLocation = "pages-crawled";
+	public static String downloaderURL = "http://search.wikileaks.org/plusd/cables";
+	public static Boolean gzCompressionInOutput = true;
 	public static char newline = '\n';
 	public static char separator = '\t';
 
@@ -32,7 +35,8 @@ public class Crawler extends Configured implements Tool {
 
 	public static enum Errors {
 		NONE(0), BAD_NB_ARGS(1), INTERNAL_UNEXPECTED_CASE(2), JOB_COMPLETION(3), INPUT_FILE_WRITE(
-				4), UNASSIGNED_ERROR_CODE(5), BAD_ARGS(6);
+				4), UNASSIGNED_ERROR_CODE(5), BAD_ARGS(6), CANNOT_CREATE_SAVING_FOLDER(
+				7);
 
 		private int value;
 
@@ -114,32 +118,36 @@ public class Crawler extends Configured implements Tool {
 			Job job = Job.getInstance(conf, "Wikileaks - PlusD data Crawler");
 			FileSystem fs = FileSystem.get(conf);
 
-			job.setJarByClass(Crawler.class);
-			job.setMapperClass(CrawlerMapper.class);
-			job.setReducerClass(CrawlerReducer.class);
-			job.setOutputKeyClass(Text.class);
-			job.setOutputValueClass(Text.class);
+			if (fs.mkdirs(new Path(pagesSavingLocation))) {
+				job.setJarByClass(Crawler.class);
+				job.setMapperClass(CrawlerMapper.class);
+				job.setReducerClass(CrawlerReducer.class);
+				job.setOutputKeyClass(Text.class);
+				job.setOutputValueClass(Text.class);
 
-			job.setInputFormatClass(TextInputFormat.class);
-			FileOutputFormat.setOutputPath(job, outputPath);
-			TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
+				job.setInputFormatClass(TextInputFormat.class);
+				FileOutputFormat.setOutputPath(job, outputPath);
+				TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
-			// Create the workload for reducers
-			if (writeInputFile(fs, tasksInputPath, fromNo, toNo,
-					nbRefIDsPerFetch)) {
-				TextInputFormat.addInputPath(job, tasksInputPath);
+				// Create the workload for reducers
+				if (writeInputFile(fs, tasksInputPath, fromNo, toNo,
+						nbRefIDsPerFetch)) {
+					TextInputFormat.addInputPath(job, tasksInputPath);
 
-				// Run the job
-				if (job.waitForCompletion(true)) {
-					returnCode = Errors.NONE.getValue();
+					// Run the job
+					if (job.waitForCompletion(true)) {
+						returnCode = Errors.NONE.getValue();
+					} else {
+						returnCode = Errors.JOB_COMPLETION.getValue();
+					}
+
+					// Do the cleaning
+					fs.delete(tasksInputPath, true);
 				} else {
-					returnCode = Errors.JOB_COMPLETION.getValue();
+					returnCode = Errors.INPUT_FILE_WRITE.getValue();
 				}
-
-				// Do the cleaning
-				// fs.delete(tasksInputPath, true);
 			} else {
-				returnCode = Errors.INPUT_FILE_WRITE.getValue();
+				returnCode = Errors.CANNOT_CREATE_SAVING_FOLDER.getValue();
 			}
 		}
 
