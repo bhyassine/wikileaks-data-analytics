@@ -7,10 +7,40 @@ import org.codehaus.jettison.json.JSONObject;
 
 /**
  * Sphinxer is the web interface for wikileaks cables.
- * URL: 		www.wikileaks.org/plusd/sphinxer_do.php
- * Protocol: 	http/https
+ * 
+ * Parameters of the query found:
+ * 
+ * 	format			[optional]	The response format
+ * 	command			[mandatory]	The type of query
+ * 	project			[mandatory]	The associated dataset
+ * 	qcanonical		[optional]	(?)
+ * 	qcanonical_seal	[mandatory]	(?) For each query rights-level, a security seal is associated
+ * 	qtfrom			[???]		From date (timestamp)
+ * 	qtto			[???]		To date (timestamp)
+ * 	tkey_from		[optional]	From date (timestamp)
+ * 	tkey_to			[optional]	To date (timestamp)
+ * 	qsort			[???]		results sorting type
+ * 	qlimit			[???]		(?) cardinality of results
+ * 	token			[???]		(?) The FROM of a LIMIT statement
+ * 	unit			[optional]	The level of aggregation
  */
 public class Sphinxer {
+
+	public static String urlStr = "www.wikileaks.org/plusd/sphinxer_do.php";
+
+	public static enum availableProtocols {
+		HTTP("http"), HTTPS("https");
+
+		private String value;
+
+		private availableProtocols(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+	}
 
 	public static enum Cmds {
 		STATS_FROM_QUERY("stats_from_query"), DOC_LIST_FROM_QUERY(
@@ -18,8 +48,8 @@ public class Sphinxer {
 
 		private String value;
 
-		private Cmds(String cmdName) {
-			this.value = cmdName;
+		private Cmds(String value) {
+			this.value = value;
 		}
 
 		public Map.Entry<String, String> getValue() {
@@ -33,8 +63,8 @@ public class Sphinxer {
 
 		private String value;
 
-		private Projects(String cmdName) {
-			this.value = cmdName;
+		private Projects(String value) {
+			this.value = value;
 		}
 
 		public Map.Entry<String, String> getValue() {
@@ -48,8 +78,8 @@ public class Sphinxer {
 
 		private String value;
 
-		private CanonicalSeals(String cmdName) {
-			this.value = cmdName;
+		private CanonicalSeals(String value) {
+			this.value = value;
 		}
 
 		public Map.Entry<String, String> getValue() {
@@ -63,8 +93,8 @@ public class Sphinxer {
 
 		private String value;
 
-		private Units(String cmdName) {
-			this.value = cmdName;
+		private Units(String value) {
+			this.value = value;
 		}
 
 		public Map.Entry<String, String> getValue() {
@@ -84,8 +114,8 @@ public class Sphinxer {
 
 		private String value;
 
-		private Format(String cmdName) {
-			this.value = cmdName;
+		private Format(String value) {
+			this.value = value;
 		}
 
 		public Map.Entry<String, String> getValue() {
@@ -95,25 +125,28 @@ public class Sphinxer {
 	}
 
 	/**
-	 * Ask Sphinxer
-	 * 
-	 * Parameters of the query:
-	 * 	format			[optional]	The response format
-	 * 	command			[mandatory]	The type of query
-	 * 	project			[mandatory]	The associated dataset
-	 * 	qcanonical		[optional]	(?)
-	 * 	qcanonical_seal	[mandatory]	(?) For each query rights-level, a security seal is associated
-	 * 	qtfrom			[???]		From date (timestamp)
-	 * 	qtto			[???]		To date (timestamp)
-	 * 	tkey_from		[optional]	From date (timestamp)
-	 * 	tkey_to			[optional]	To date (timestamp)
-	 * 	qsort			[???]		results sorting type
-	 * 	qlimit			[???]		(?) cardinality of results
-	 * 	token			[???]		(?) The FROM of a LIMIT statement
+	 * Ask Sphinxer for statistics.
+	 * Can take these parameters:
+	 *	command, project, qcanonical_seal, tkey_from, tkey_to, unit
 	 * 
 	 * @return the JSON query result
 	 */
-	public static JSONObject ask() {
+	public static JSONObject askForStats() {
+		JSONObject jsonRes = new JSONObject();
+
+		// TODO: implement
+
+		return jsonRes;
+	}
+
+	/**
+	 * Ask Sphinxer for documents meta listing.
+	 * Can take these parameters:
+	 *	(?)
+	 * 
+	 * @return the JSON query result
+	 */
+	public static JSONObject askForMetaListing() {
 		JSONObject jsonRes = new JSONObject();
 
 		// TODO: implement
