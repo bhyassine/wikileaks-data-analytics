@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Stack;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -71,13 +72,15 @@ public class Crawler extends Configured implements Tool {
 				fromDate = defaultDF.parse(fromDateStr);
 				toDate = defaultDF.parse(toDateStr);
 
-				Sphinxer.askForRefIDListing(1, 25);
+				Stack<String> refIDs = Sphinxer.askForRefIDListing(1, 25);
+
+				System.out.println(refIDs.size());
 
 				// TODO: outputs the pairs (page_id, ...) for each page_id of
 				// documents found in the interval of the date chunk
 				context.write(new Text("a"), new Text("b"));
 
-			} catch (ParseException e) {
+			} catch (Exception e) {
 				context.write(
 						new Text(errorToken),
 						new Text(String.format("Unable to parse %s or %s",

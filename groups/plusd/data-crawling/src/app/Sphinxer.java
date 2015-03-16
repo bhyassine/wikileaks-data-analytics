@@ -1,8 +1,12 @@
 package app;
 
-import java.io.UnsupportedEncodingException;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 /**
@@ -134,6 +138,7 @@ public class Sphinxer {
 	 * 
 	 * Note that html provides less information in some cases and hence
 	 * gives a smaller response.
+	 * Note that html format gives a JSON with a .content html field
 	 */
 	public static enum Format {
 		JSON("json"), HTML("html");
@@ -174,11 +179,13 @@ public class Sphinxer {
 	 *	qcanonical_seal, project, command, format
 	 * 
 	 * @return the JSON query result
-	 * @throws UnsupportedEncodingException 
+	 * @throws IOException 
+	 * @throws MalformedURLException 
+	 * @throws JSONException 
 	 */
 	public static Stack<String> askForRefIDListing(int fromDocumentNo,
-			int nbOfDocuments) throws UnsupportedEncodingException,
-			IllegalArgumentException {
+			int nbOfDocuments) throws IllegalArgumentException,
+			MalformedURLException, IOException, JSONException {
 		Stack<String> refIdStack = new Stack<String>();
 
 		int qlimit = nbOfDocuments;
@@ -216,10 +223,19 @@ public class Sphinxer {
 		parameters.add(Sphinxer.Format.key, Sphinxer.Format.HTML.getValue());
 
 		URLStr.append(parameters.toString());
-		System.out.println(URLStr.toString());
 
-		// TODO: Fetch URLStr
-		// TODO: Extract ref_ids from it
+		// Download the page
+		JSONObject jsonAnswer = new JSONObject(
+				PageLoader.get(URLStr.toString()));
+		String HTMLStr = jsonAnswer.getString("content");
+
+		// Extract ref_ids
+		// e.g.: <tr id="72TEHRAN1164_a">
+		Pattern p = Pattern.compile("<tr id=\"([A-Za-z0-9_]+?)\">");
+		Matcher m = p.matcher(HTMLStr);
+		while (m.find()) {
+			refIdStack.push(m.group(1));
+		}
 
 		return refIdStack;
 	}
