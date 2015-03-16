@@ -188,10 +188,20 @@ public class Sphinxer {
 			throw new IllegalArgumentException(
 					"nbOfDocuments should be between 20 and 500");
 		}
+		if (fromDocumentNo < 1) {
+			throw new IllegalArgumentException(
+					"The documents begin from No 1 (and not below)");
+		}
+		if (fromDocumentNo > 2325959) {
+			throw new IllegalArgumentException(
+					"The documents end at No 2325959 (and not above)");
+		}
 
 		StringBuilder URLStr = new StringBuilder();
 		URLStr.append(Sphinxer.availableProtocols.HTTP.getValue());
+		URLStr.append("://");
 		URLStr.append(Sphinxer.urlStr);
+		URLStr.append('?');
 
 		QueryString parameters = new QueryString();
 		parameters.add(Token.key, String.valueOf(fromDocumentNo));
@@ -206,6 +216,7 @@ public class Sphinxer {
 		parameters.add(Sphinxer.Format.key, Sphinxer.Format.HTML.getValue());
 
 		URLStr.append(parameters.toString());
+		System.out.println(URLStr.toString());
 
 		// TODO: Fetch URLStr
 		// TODO: Extract ref_ids from it
