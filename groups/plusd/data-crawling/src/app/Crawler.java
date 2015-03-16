@@ -73,36 +73,6 @@ public class Crawler extends Configured implements Tool {
 
 				Sphinxer.askForRefIDListing(1, 25);
 
-				// TODO: create a PageFetcher Class (for code below)
-				// try {
-				// HttpURLConnection connection = (HttpURLConnection) qURL
-				// .openConnection();
-				// BufferedReader qBF = new BufferedReader(
-				// new InputStreamReader(connection.getInputStream()));
-				//
-				// JSONObject jsonResponse = new JSONObject(
-				// IOUtils.toString(qBF));
-				//
-				// String totalNumDocs = jsonResponse
-				// .getString("total_num_docs");
-				//
-				// // TODO: totalNumDocs are always 0..? check where the bug is
-				// // with the above query.
-				// // Suggestion: Check in depth how the queries work on
-				// // https://www.wikileaks.org/plusd/
-				// System.out.println(fromDateStr + " " + toDateStr + " ("
-				// + String.valueOf(totalNumDocs) + ") "
-				// + qURL.toString());
-				//
-				// qBF.close();
-				// } catch (IOException e) {
-				// // TODO: handle this case
-				// e.printStackTrace();
-				// } catch (Exception e) {
-				// // TODO: handle this case
-				// e.printStackTrace();
-				// }
-
 				// TODO: outputs the pairs (page_id, ...) for each page_id of
 				// documents found in the interval of the date chunk
 				context.write(new Text("a"), new Text("b"));
