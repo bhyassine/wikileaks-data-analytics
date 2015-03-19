@@ -261,17 +261,23 @@ public class Sphinxer {
 			e2.printStackTrace();
 		}
 
+		JSONObject jsonObj;
+		String content = "";
+		try {
+			jsonObj = new JSONObject(pageStr);
+			content = jsonObj.getString("content");
+		} catch (JSONException e) {
+			// We have to stop, no plan-B
+			e.printStackTrace();
+		}
+
 		// Extract ref_ids
 		// e.g.: <tr id="72TEHRAN1164_a">
 		Pattern p = Pattern.compile("<tr id=\"([A-Za-z0-9_]+?)\">");
-		Matcher m = p.matcher(pageStr);
-
-		// TODO: delete
-		System.out.println(pageStr);
+		Matcher m = p.matcher(content);
 
 		while (m.find()) {
 			refIdStack.push(m.group(1));
-			System.out.println(m.group(1));
 		}
 
 		return refIdStack;
