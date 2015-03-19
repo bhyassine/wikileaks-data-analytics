@@ -2,7 +2,7 @@
 
 
 # Task Assignments
-| Name          | WorkPackage  |    Name      |
+| Username      | WorkPackage  |    Name      |
 | --------------|:------------:|:------------:|
 | HKassir72     |              | Hussein      |
 | CanGuzerlhan  | #7           | Can          |
