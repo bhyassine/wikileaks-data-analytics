@@ -1,12 +1,17 @@
 package parsing;
 
+
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,7 +23,9 @@ import exception.OutputAlreadyExistsException;
 
 /**
  * An HTML parser. Uses the library JSOUP to parse HTML files.
+ * 
  * TODO Define output format
+ * 
  * @author Florian Briant
  *
  */
@@ -27,7 +34,7 @@ public class HTMLParser {
 	 * The parser function for one single HTML file.
 	 * 
 	 * @param input
-	 *            the input HTML file
+	 *            the path of the input HTML file
 	 * @param jsoupSelect
 	 *            the JSOUP selection criteria
 	 * @return text results of the selection criteria
@@ -46,7 +53,42 @@ public class HTMLParser {
 				res += elem.text() + ";";
 			}
 		} else {
-			throw new InputFileIsDirectoryException("Input file '" + input + "' is a directory.");
+			throw new InputFileIsDirectoryException("Input file '" + input
+					+ "' is a directory.");
+		}
+		return res;
+	}
+
+	/**
+	 * The parse function for one HTML file in an HDFS Hadoop FileSystem
+	 * 
+	 * @param input
+	 *            the hdfs path of the input HTML file
+	 * @param jsoupSelect
+	 *            the JSOUP selection criteria
+	 * @param fs
+	 *            the hadoop FileSystem
+	 * @return the text results of the selection criteria
+	 * @throws IOException
+	 *             if it could not open the HTML file
+	 */
+	public static String parseHDFS(String input, String jsoupSelect,
+			FileSystem fs) throws IOException {
+		String res = "";
+		Path inputPath = new Path(input);
+		BufferedReader br = new BufferedReader(new InputStreamReader(
+				fs.open(inputPath)));
+		String htmlString = "";
+		String line = "";
+		line = br.readLine();
+		while (line != null) {
+			htmlString += line;
+			line = br.readLine();
+		}
+		Document doc = Jsoup.parse(htmlString);
+		Elements elements = doc.select(jsoupSelect);
+		for (Element elem : elements) {
+			res += elem.text() + ";";
 		}
 		return res;
 	}
