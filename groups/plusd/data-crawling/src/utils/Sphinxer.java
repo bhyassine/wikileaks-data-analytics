@@ -1,7 +1,6 @@
 package utils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.util.Stack;
 import java.util.regex.Matcher;
@@ -9,8 +8,6 @@ import java.util.regex.Pattern;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-
-import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
 
 /**
  * Sphinxer is the web interface for wikileaks cables.
@@ -210,8 +207,7 @@ public class Sphinxer {
 	 * @throws JSONException 
 	 */
 	public static Stack<String> askForRefIDListing(int fromDocumentNo,
-			int nbOfDocuments) throws IllegalArgumentException,
-			InternalRuntimeError {
+			int nbOfDocuments) throws IllegalArgumentException {
 		Stack<String> refIdStack = new Stack<String>();
 
 		int qlimit = nbOfDocuments;
@@ -234,6 +230,7 @@ public class Sphinxer {
 							maxDocumentNo));
 		}
 
+		// Build the URL
 		StringBuilder URLStr = new StringBuilder();
 		URLStr.append(AvailableProtocols.HTTP.getValue());
 		URLStr.append("://");
@@ -241,57 +238,40 @@ public class Sphinxer {
 		URLStr.append('?');
 
 		QueryString parameters = new QueryString();
-		try {
-			parameters.add(Token.key, String.valueOf(fromDocumentNo));
-			parameters.add(QLimit.key, String.valueOf(qlimit));
-			parameters.add(Sorts.key, Sphinxer.Sorts.TIME_ASC.getValue());
-			parameters.add(CanonicalSeals.key,
-					CanonicalSeals.PUBLIC_READ.getValue());
-			parameters.add(Projects.key, Projects.ALL_CABLES.getValue());
-			parameters.add(Cmds.key, Cmds.DOC_LIST_FROM_QUERY.getValue());
-			parameters.add(Format.key, Format.HTML.getValue());
-		} catch (UnsupportedEncodingException e) {
-			throw new InternalRuntimeError(String.format(
-					"Impossible to build the URL string: %s", e.getMessage()));
-		}
+		parameters.add(Token.key, String.valueOf(fromDocumentNo));
+		parameters.add(QLimit.key, String.valueOf(qlimit));
+		parameters.add(Sorts.key, Sphinxer.Sorts.TIME_ASC.getValue());
+		parameters.add(CanonicalSeals.key,
+				CanonicalSeals.PUBLIC_READ.getValue());
+		parameters.add(Projects.key, Projects.ALL_CABLES.getValue());
+		parameters.add(Cmds.key, Cmds.DOC_LIST_FROM_QUERY.getValue());
+		parameters.add(Format.key, Format.HTML.getValue());
 
 		URLStr.append(parameters.toString());
 
 		// Download the page
-		JSONObject jsonAnswer;
+		String pageStr = "";
 		try {
-			jsonAnswer = new JSONObject(PageLoader.get(URLStr.toString()));
-		} catch (MalformedURLException e) {
-			throw new InternalRuntimeError(
-					String.format("Malformed URL %s, got message: %s", URLStr,
-							e.getMessage()));
-		} catch (JSONException e) {
-			throw new InternalRuntimeError(
-					String.format(
-							"Impossible to parse into JSON content \n\n %s \n\n got message %s",
-							e.getMessage()));
-		} catch (IOException e) {
-			throw new InternalRuntimeError(String.format(
-					"Impossible to fetch page %s, got error: %s", URLStr,
-					e.getMessage()));
-		}
-		String HTMLStr;
-		String field = "content";
-		try {
-			HTMLStr = jsonAnswer.getString(field);
-		} catch (JSONException e) {
-			throw new InternalRuntimeError(
-					String.format(
-							"Impossible to extract a %s field from string %s, got message %s",
-							field, jsonAnswer.toString(), e.getMessage()));
+			pageStr = PageLoader.get(URLStr.toString());
+		} catch (MalformedURLException e1) {
+			// Internal error, stop program
+			e1.printStackTrace();
+		} catch (IOException e2) {
+			// Internal error, stop program
+			e2.printStackTrace();
 		}
 
 		// Extract ref_ids
 		// e.g.: <tr id="72TEHRAN1164_a">
 		Pattern p = Pattern.compile("<tr id=\"([A-Za-z0-9_]+?)\">");
-		Matcher m = p.matcher(HTMLStr);
+		Matcher m = p.matcher(pageStr);
+
+		// TODO: delete
+		System.out.println(pageStr);
+
 		while (m.find()) {
 			refIdStack.push(m.group(1));
+			System.out.println(m.group(1));
 		}
 
 		return refIdStack;

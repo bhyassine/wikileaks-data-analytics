@@ -8,8 +8,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import utils.Sphinxer;
 
-import com.sun.org.apache.xalan.internal.xsltc.runtime.InternalRuntimeError;
-
 class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 
 	public void map(Object lineObj, Text fromToString, Context context)
@@ -27,11 +25,8 @@ class CrawlerMapper extends Mapper<Object, Text, Text, Text> {
 				context.write(new Text(refID), new Text("dontCare"));
 			}
 		} catch (IllegalArgumentException e) {
-			context.write(new Text(Crawler.errorToken),
-					new Text(e.getMessage()));
-		} catch (InternalRuntimeError e) {
-			context.write(new Text(Crawler.errorToken),
-					new Text(e.getMessage()));
+			// We can't fix this error, stop the program
+			e.printStackTrace();
 		}
 	}
 }

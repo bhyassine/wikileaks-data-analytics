@@ -49,7 +49,7 @@ public class Crawler extends Configured implements Tool {
 		}
 	};
 
-	public static boolean writeInputFile(FileSystem fs, Path path, int fromNo,
+	public static void writeInputFile(FileSystem fs, Path path, int fromNo,
 			int toNo, int stepsSize) throws IOException {
 
 		OutputStreamWriter osw = new OutputStreamWriter(fs.create(path));
@@ -64,8 +64,6 @@ public class Crawler extends Configured implements Tool {
 		osw.write(workChunks.toString());
 		osw.flush();
 		osw.close();
-
-		return true;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -130,22 +128,19 @@ public class Crawler extends Configured implements Tool {
 				TextInputFormat.setMaxInputSplitSize(job, Long.MAX_VALUE);
 
 				// Create the workload for reducers
-				if (writeInputFile(fs, tasksInputPath, fromNo, toNo,
-						nbRefIDsPerFetch)) {
-					TextInputFormat.addInputPath(job, tasksInputPath);
+				writeInputFile(fs, tasksInputPath, fromNo, toNo,
+						nbRefIDsPerFetch);
+				TextInputFormat.addInputPath(job, tasksInputPath);
 
-					// Run the job
-					if (job.waitForCompletion(true)) {
-						returnCode = Errors.NONE.getValue();
-					} else {
-						returnCode = Errors.JOB_COMPLETION.getValue();
-					}
-
-					// Do the cleaning
-					fs.delete(tasksInputPath, true);
+				// Run the job
+				if (job.waitForCompletion(true)) {
+					returnCode = Errors.NONE.getValue();
 				} else {
-					returnCode = Errors.INPUT_FILE_WRITE.getValue();
+					returnCode = Errors.JOB_COMPLETION.getValue();
 				}
+
+				// Do the cleaning
+				fs.delete(tasksInputPath, true);
 			} else {
 				returnCode = Errors.CANNOT_CREATE_SAVING_FOLDER.getValue();
 			}
