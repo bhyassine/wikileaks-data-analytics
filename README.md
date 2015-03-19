@@ -3,14 +3,14 @@
 
 # Task Assignments
 | Name          | WorkPackage  |
-| --------------|:------------:|
-| HKassir72     |              |
-| CanGuzerlhan  | #7           |
-| agulfy        |              |
-| fbriant       | #5           |
-| xPh3n0m       | #4           |
-| M-Eng         | #7           |
-| fouweric      |              |
-| bhyassine     | #6           |
-| ketjuni2      |              |
-| GokcenCimen   |              |
+| --------------|:------------:|:------------:|
+| HKassir72     |              | Hussein      |
+| CanGuzerlhan  | #7           | Can          |
+| agulfy        |              | Deniz        |
+| fbriant       | #5           | Florian      |
+| xPh3n0m       | #4           | Thierry      |
+| M-Eng         | #7           | Martin       |
+| fouweric      |              | Frédéric     |
+| bhyassine     | #6           | Yassine      |
+| ketjuni2      |              | Ketevani     |
+| GokcenCimen   |              | Gökçen       |
