@@ -80,7 +80,7 @@ for(var crawlerNo = 0; crawlerNo < nbCrawlers; crawlerNo++) {
 	execute(cmd);
 	
 	// Launch the jar
-	cmd = 'java -jar cables-crawler-java-only.jar '+cFrom+' '+cTo+' &> log.txt &';
+	cmd = 'java -jar '+jarLocation+' '+cFrom+' '+cTo+' &> log.txt &';
 	executeCwd(cmd, dirName);
 	
 	var logExists;
