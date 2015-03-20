@@ -72,15 +72,20 @@ for(var crawlerNo = 0; crawlerNo < nbCrawlers; crawlerNo++) {
 	
 	// Create dir
 	var dirName = cFrom+'-'+cTo;
-	cmd = 'mkdir '+dirName;
-	execute(cmd);
+	cmd = 'test -e '+jarLocation+'; echo $?';
+	var dirExists = (parseInt(execute(cmd)) === 0);
 	
+	if(!dirExists) {
+		cmd = 'mkdir '+dirName;
+		execute(cmd);
+	}
+		
 	// Copy jar into
 	cmd = 'cp '+jarLocation+' '+dirName;
 	execute(cmd);
 	
 	// Launch the jar
-	cmd = 'java -jar '+jarLocation+' '+cFrom+' '+cTo+' &> log.txt &';
+	cmd = 'java -jar cables-crawler-java-only.jar '+cFrom+' '+cTo+' &> log.txt &';
 	executeCwd(cmd, dirName);
 	
 	var logExists;
@@ -91,7 +96,7 @@ for(var crawlerNo = 0; crawlerNo < nbCrawlers; crawlerNo++) {
 		logExists = (parseInt(executeCwd(cmd, dirName)) === 0);
 	} while(!logExists);
 	
-	cmd = 'grep -Fq "fetched" log.txt; echo $?';
+	cmd = '(grep -Fq "fetched" log.txt || grep -Fq "Exiting" log.txt); echo $?';
 	var fetchedADoc;
 	do {
 		console.log('.. waiting for 1st pages to be fetched');
