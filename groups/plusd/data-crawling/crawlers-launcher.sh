@@ -72,20 +72,20 @@ for(var crawlerNo = 0; crawlerNo < nbCrawlers; crawlerNo++) {
 	
 	// Create dir
 	var dirName = cFrom+'-'+cTo;
-	cmd = 'test -e '+jarLocation+'; echo $?';
+	cmd = 'test -e '+dirName+'; echo $?';
 	var dirExists = (parseInt(execute(cmd)) === 0);
 	
 	if(!dirExists) {
-		cmd = 'mkdir '+dirName;
+		cmd = 'mkdir "'+dirName+'"';
 		execute(cmd);
 	}
 		
 	// Copy jar into
-	cmd = 'cp '+jarLocation+' '+dirName;
+	cmd = 'cp '+jarLocation+' '+dirName+'/';
 	execute(cmd);
 	
 	// Launch the jar
-	cmd = 'java -jar cables-crawler-java-only.jar '+cFrom+' '+cTo+' &> log.txt &';
+	cmd = 'java -jar '+jarLocation+' '+cFrom+' '+cTo+' &> log.txt &';
 	executeCwd(cmd, dirName);
 	
 	var logExists;
