@@ -17,6 +17,7 @@ public class Crawler {
 	public static String extension = gzCompressionInOutput ? "gz" : "html";
 	public static char newline = '\n';
 	public static char separator = '\t';
+	public static int maxNbOfRetry = 3;
 
 	// Errors are valid (key) reducer outputs (yes, they can happen, and we must
 	// be informed)
@@ -161,7 +162,11 @@ public class Crawler {
 								.println(String
 										.format("Cannot fetch page(refID: %s), nbOfTries(%d).. retrying",
 												refID, nbOfTries));
-						nbOfTries++;
+						if (nbOfTries >= maxNbOfRetry) {
+							success = true;
+						} else {
+							nbOfTries++;
+						}
 					}
 				}
 			}
