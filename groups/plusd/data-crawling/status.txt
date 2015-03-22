@@ -1,0 +1,11 @@
+	Name				Status				# of docs	Location		cmts
+------------------------------------------------------------------------------------------------------
+crawl-0-200k-20k		crawling			180841		Home
+crawl-200k-350k-10k		crawling			111325		Home
+crawl-350k-400k-5k		crawling			39875		Home
+
+crawl-800k-1200k-20k	transfertH			313466		Lapinot.ch
+
+crawl-1200k-1600k-20k	crawling			321048		Lapinette.ch
+
+.. (gloogle.ch / wigaab.com)
