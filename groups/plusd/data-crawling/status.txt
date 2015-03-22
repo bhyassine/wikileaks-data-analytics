@@ -1,18 +1,18 @@
 	Name					Status				# of docs	Location		cmts
 ------------------------------------------------------------------------------------------------------
-crawl-0-200k-20k			transferE			194057		Home PC
-crawl-200k-350k-10k			transferE			111325		Home PC
-crawl-350k-400k-5k			transferE			39875		Home PC
+crawl-0-200k-20k			transferE-copied	194057		Home PC
+crawl-200k-350k-10k			transferE-copy		111325		Home PC
+crawl-350k-400k-5k			transferE-copy		39875		Home PC
 
 crawl-400k-800k-20k			crawling			305480		Home Laptop
 
-crawl-800k-1200k-20k		transfertH			313466		Lapinot.ch
+crawl-800k-1200k-20k		transferE-copy		313466		Lapinot.ch
 
-crawl-1600k-2000k-20k		transfertH			382789		wigaab.com
+crawl-1600k-2000k-20k		transferH			382789		wigaab.com
 
-crawl-1200k-1600k-20k		transfertH			326549		Lapinette.ch
+crawl-1200k-1600k-20k		transferH			326549		Lapinette.ch
 
-crawl-2000k-2325960-30k		transferH			325958		gloogle.ch
+crawl-2000k-2325960-30k		recovering			325958		gloogle.ch
 
 ------------------------------------------------------------------------------------------------------
 Total: 1,999,499 documents
